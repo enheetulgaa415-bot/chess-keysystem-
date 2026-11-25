@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Admin Panel</h1>
+
+      <label>Admin Password</label>
+      <input type="password" id="pass" placeholder="Enter password">
+
+      <label style="margin-top:14px;">Number of keys to generate</label>
+      <input type="number" id="count" value="1" min="1" max="100">
+
+      <button onclick="generate()" style="margin-top:16px; width:100%;">Generate Keys</button>
+
+      <div id="result" style="display:none; margin-top:16px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong>Generated Keys:</strong>
+          <button onclick="copyAll()" style="font-size:12px; padding:4px 10px;">Copy All</button>
+        </div>
+        <pre id="keyList"></pre>
+      </div>
+
+      <p id="adminStatus" class="status"></p>
+    </div>
+  </div>
+  <script>
+    async function generate() {
+      const pass   = document.getElementById("pass").value;
+      const count  = parseInt(document.getElementById("count").value) || 1;
+      const status = document.getElementById("adminStatus");
+
+      status.textContent = "Generating...";
+      status.style.color = "#58a6ff";
+
+      try {
+        const res  = await fetch("/.netlify/functions/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pass, count }),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          status.textContent = `❌ ${data.error}`;
+          status.style.color = "#f85149";
+          return;
+        }
+
+        document.getElementById("keyList").textContent = data.generated.join("\n");
+        document.getElementById("result").style.display = "block";
+        status.textContent = `✅ ${data.generated.length} key(s) generated — 24h TTL each`;
+        status.style.color = "#3fb950";
+      } catch (e) {
+        status.textContent = "❌ Request failed: " + e.message;
+        status.style.color = "#f85149";
+      }
+    }
+
+    function copyAll() {
+      navigator.clipboard.writeText(document.getElementById("keyList").textContent)
+        .then(() => alert("Copied to clipboard!"));
+    }
+  </script>
+</body>
+</html>
