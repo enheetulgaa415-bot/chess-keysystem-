@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get Your Key</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Chess Bot Key</h1>
+      <p class="sub">Copy the key below and paste it into the script.</p>
+      <div class="key-box">
+        <span id="keyDisplay">Loading...</span>
+        <button onclick="copyKey()">Copy</button>
+      </div>
+      <p id="statusMsg" class="status"></p>
+      <p class="expire-note">⏱ Key expires in <strong>24 hours</strong>.</p>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const key = params.get("key");
+    const display = document.getElementById("keyDisplay");
+    const status  = document.getElementById("statusMsg");
+
+    if (!key) {
+      display.textContent = "No key found.";
+      status.textContent  = "Please complete the Linkvertise task first.";
+      status.style.color  = "#f85149";
+    } else {
+      display.textContent = key;
+      fetch("/.netlify/functions/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.valid) {
+          status.textContent = `✅ Active — ${data.remainingHours} hours remaining`;
+          status.style.color = "#3fb950";
+        } else {
+          status.textContent = `❌ ${data.error}`;
+          status.style.color = "#f85149";
+        }
+      })
+      .catch(() => {
+        status.textContent = "⚠️ Could not verify key.";
+        status.style.color = "#d29922";
+      });
+    }
+
+    function copyKey() {
+      if (!key) return;
+      navigator.clipboard.writeText(key).then(() => {
+        const btn = document.querySelector("button");
+        btn.textContent = "Copied!";
+        setTimeout(() => btn.textContent = "Copy", 2000);
+      });
+    }
+  </script>
+</body>
+</html>
